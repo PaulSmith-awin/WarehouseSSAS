@@ -1,0 +1,2814 @@
+CREATE MEASURE 'Advertiser'[Advertisers] = CALCULATE(DISTINCTCOUNT(Transactions[AdvertiserKey]))
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Advertiser'[Advertiser Rank] = RANKX( ALL(Advertiser[Advertiser]), [Order Value])
+;
+
+CREATE MEASURE 'Clicks'[Clicks] = SUM([ClickCount])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PY] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+		// Full month selected.
+        CALCULATE (
+            [Clicks],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        ),
+		// Partial month selected.
+        CALCULATE (
+            [Clicks],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PQ] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected.
+        CALCULATE (
+            [Clicks],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Clicks],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PM] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected. 
+        CALCULATE (
+            [Clicks],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Clicks],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [Clicks PD],
+    ISFILTERED ( 'Calendar'[Month] ), [Clicks PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Clicks PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Clicks PY],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PW] = 
+SUMX (
+    VALUES ( 'Calendar'[WeekInEpoch] ),
+    CALCULATE (
+        [Clicks],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[WeekInEpoch] ),
+            'Calendar'[WeekInEpoch]
+                = EARLIER ( 'Calendar'[WeekInEpoch] ) - 1
+        )
+    )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PD] = 
+SUMX (
+    VALUES ( 'Calendar'[DayInEpoch] ),
+    CALCULATE (
+        [Clicks],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[DayInEpoch] ),
+            'Calendar'[DayInEpoch]
+                = EARLIER ( 'Calendar'[DayInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks POP] = [Clicks] - [Clicks PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks POP%] = DIVIDE([Clicks POP],[Clicks PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PPY] = 
+CALCULATE (
+    [Clicks],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+    )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PPQ] = 
+CALCULATE (
+    [Clicks],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[QuarterInYear] = MAX ( 'Calendar'[QuarterInYear] )
+    )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PPM] = 
+CALCULATE (
+    [Clicks],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[MonthInYear] = MAX ( 'Calendar'[MonthInYear] )
+    )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PPW] = 
+CALCULATE (
+    [Clicks],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[ISOYearNumber]
+            = MAX ( 'Calendar'[ISOYearNumber] ) - 1
+            && 'Calendar'[ISOWeekNumber] = MAX ( 'Calendar'[ISOWeekNumber] )
+    )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks PPD] = 0
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks SPLY] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Month] ), [Clicks PPM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Clicks PPQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Clicks PPY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [Clicks PPW],
+    BLANK ()
+)
+
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks YOY] =  [Clicks] - [Clicks PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks QOQ] =  [Clicks] - [Clicks PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks MOM] =  [Clicks] - [Clicks PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks WOW] =  [Clicks] - [Clicks PW]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks YOY%] =  DIVIDE ( [Clicks YOY], [Clicks PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Clicks'[Clicks QOQ%] =  DIVIDE ( [Clicks QOQ], [Clicks PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Clicks'[Clicks MOM%] =  DIVIDE ( [Clicks MOM], [Clicks PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Clicks'[Clicks WOW%] =  DIVIDE ( [Clicks WOW], [Clicks PW] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Clicks'[Clicks YTD] = 
+CALCULATE (
+    [Clicks],
+    FILTER (
+        ALL ( 'Calendar' ),
+        'Calendar'[YearNumber] = MAX ( 'Calendar'[YearNumber] )
+            && 'Calendar'[Date] <= MAX ( 'Calendar'[Date] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Clicks'[Clicks QTD] = 
+CALCULATE (
+    [Clicks],
+    FILTER (
+        ALL ( 'Calendar' ),
+        'Calendar'[YearQuarterNumber] = MAX ( 'Calendar'[YearQuarterNumber] )
+            && 'Calendar'[Date] <= MAX ( 'Calendar'[Date] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Publisher'[Publishers] = CALCULATE(DISTINCTCOUNT(Transactions[PublisherKey]))
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Publisher'[Publisher Rank] = RANKX( ALL(Publisher[Publisher]), [Order Value])
+;
+
+CREATE MEASURE 'Publisher'[First Sale] = FIRSTDATE('Calendar'[Date])
+CALCULATION PROPERTY GENERAL
+    FORMAT = 'General Date'
+;
+
+CREATE MEASURE 'Transactions'[AOV] = DIVIDE([Order Value], [Sales])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+    DESCRIPTION = 'Average Order Value'
+;
+
+CREATE MEASURE 'Transactions'[CR] = DIVIDE([Sales], [Clicks])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+    DESCRIPTION = 'Conversion Rate'
+;
+
+CREATE MEASURE 'Transactions'[Sales POP] = [Sales] - [Sales PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales PPY] = 
+CALCULATE (
+    [Sales],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Transactions'[Sales PPM] = 
+CALCULATE (
+    [Sales],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[MonthInYear] = MAX ( 'Calendar'[MonthInYear] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Transactions'[Sales SPLY] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Month] ), [Sales PPM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Sales PPQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Sales PPY],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+    DESCRIPTION = 'Sales for the Same Period Last Year'
+;
+
+CREATE MEASURE 'Transactions'[Sales PPQ] = 
+CALCULATE (
+    [Sales],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[QuarterInYear] = MAX ( 'Calendar'[QuarterInYear] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Transactions'[Commission PPY] = 
+CALCULATE (
+    [Commission],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[Commission PPQ] = 
+CALCULATE (
+    [Commission],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[QuarterInYear] = MAX ( 'Calendar'[QuarterInYear] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[Commission PPM] = 
+CALCULATE (
+    [Commission],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[MonthInYear] = MAX ( 'Calendar'[MonthInYear] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[Commission SPLY] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Month] ), [Commission PPM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Commission PPQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Commission PPY],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales POP%] = DIVIDE([Sales POP],[Sales PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission POP%] = DIVIDE([Commission POP],[Commission PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP POP%] = DIVIDE([GP POP],[GP PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP PPY] = 
+CALCULATE (
+    [GP],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[GP PPQ] = 
+CALCULATE (
+    [GP],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[QuarterInYear] = MAX ( 'Calendar'[QuarterInYear] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[GP PPM] = 
+CALCULATE (
+    [GP],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[MonthInYear] = MAX ( 'Calendar'[MonthInYear] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[GP SPLY] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Month] ), [GP PPM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [GP PPQ],
+    ISFILTERED ( 'Calendar'[Year] ), [GP PPY],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI] = [Order Value] - [Costs]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+    DESCRIPTION = 'Return On Investment'
+;
+
+CREATE MEASURE 'Transactions'[CTR] =  DIVIDE([Clicks], [Impressions])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+    DESCRIPTION = 'Click Through Rate'
+;
+
+CREATE MEASURE 'Transactions'[Sales PY] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected.
+        CALCULATE (
+            [Sales],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        ),
+        // Partial month selected.
+        CALCULATE (
+            [Sales],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales PQ] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected.
+        CALCULATE (
+            [Sales],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Sales],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales PM] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    VAR PreviousYearMonth =
+        FILTER (
+            ALL ( 'Calendar'[YearMonthNumber] ),
+            'Calendar'[YearMonthNumber]
+                = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+        )
+    RETURN
+        IF (
+            CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+                = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+            CALCULATE ( [Sales], ALL ( 'Calendar' ), PreviousYearMonth ),
+            CALCULATE (
+                [Sales],
+                ALL ( 'Calendar' ),
+                CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+                PreviousYearMonth
+            )
+        )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales PW] = 
+SUMX (
+    VALUES ( 'Calendar'[WeekInEpoch] ),
+    CALCULATE (
+        [Sales],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[WeekInEpoch] ),
+            'Calendar'[WeekInEpoch]
+                = EARLIER ( 'Calendar'[WeekInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [Sales PD],
+    ISFILTERED ( 'Calendar'[Month] ), [Sales PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Sales PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Sales PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [Sales PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales YOY] = [Sales] - [Sales PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales QOQ] = [Sales] - [Sales PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales MOM] = [Sales] - [Sales PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales WOW] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales YOY%] = DIVIDE ( [Sales YOY], [Sales PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00%;-#,0.00%;#,0.00%'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales QOQ%] = DIVIDE ( [Sales QOQ], [Sales PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00%;-#,0.00%;#,0.00%'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales MOM%] = DIVIDE ( [Sales MOM], [Sales PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00%;-#,0.00%;#,0.00%'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales WOW%] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00%;-#,0.00%;#,0.00%'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales] = SUM(Transactions[TransactionCount])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission] = 
+IF (
+    HASONEVALUE ( Currencies[Currency Code] ),
+    SUMX (
+        CROSSJOIN ( Currencies, 'Calendar' ),
+        CALCULATE (
+            VALUES ( ExchangeRates[ExchangeRate] ) * SUM ( Transactions[CommissionAmount] )
+        )
+    ),
+    SUM ( Transactions[CommissionAmount] )
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+    DESCRIPTION = 'Commission'
+;
+
+CREATE MEASURE 'Transactions'[GP] = 
+IF (
+    HASONEVALUE ( Currencies[Currency Code] ),
+    SUMX (
+        CROSSJOIN ( Currencies, 'Calendar' ),
+        CALCULATE (
+            VALUES ( ExchangeRates[ExchangeRate] ) * SUM ( Transactions[FeeAmount] )
+        )
+    ),
+    SUM ( Transactions[FeeAmount] )
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+    DESCRIPTION = 'Gross Profit'
+;
+
+CREATE MEASURE 'Transactions'[Commission PY] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+		// Full month selected.
+        CALCULATE (
+            [Commission],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        ),
+		// Partial month selected.
+        CALCULATE (
+            [Commission],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission PQ] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected.
+        CALCULATE (
+            [Commission],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Commission],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission PM] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected. 
+        CALCULATE (
+            [Commission],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Commission],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission PW] = 
+SUMX (
+    VALUES ( 'Calendar'[WeekInEpoch] ),
+    CALCULATE (
+        [Commission],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[WeekInEpoch] ),
+            'Calendar'[WeekInEpoch]
+                = EARLIER ( 'Calendar'[WeekInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [Commission PD],
+    ISFILTERED ( 'Calendar'[Month] ), [Commission PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Commission PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Commission PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [Commission PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [GP PD],
+    ISFILTERED ( 'Calendar'[Month] ), [GP PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [GP PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [GP PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [GP PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP PW] = 
+SUMX (
+    VALUES ( 'Calendar'[WeekInEpoch] ),
+    CALCULATE (
+        [GP],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[WeekInEpoch] ),
+            'Calendar'[WeekInEpoch]
+                = EARLIER ( 'Calendar'[WeekInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP PY] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+		// Full month selected.
+        CALCULATE (
+            [GP],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        ),
+		// Partial month selected.
+        CALCULATE (
+            [GP],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP PQ] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected.
+        CALCULATE (
+            [GP],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [GP],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP PM] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected. 
+        CALCULATE (
+            [GP],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [GP],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS] = DIVIDE([Costs], [Order Value])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+    DESCRIPTION = 'Cost Of Sale'
+;
+
+CREATE MEASURE 'Transactions'[Commission YOY] = [Commission] - [Commission PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission QOQ] = [Commission] - [Commission PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission MOM] = [Commission] - [Commission PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission WOW] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission YOY%] = DIVIDE ( [Commission YOY], [Commission PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission QOQ%] = DIVIDE ( [Commission QOQ], [Commission PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission MOM%] = DIVIDE ( [Commission MOM], [Commission PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission WOW%] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP YOY] = [GP] - [GP PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP QOQ] = [GP] - [GP PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP MOM] = [GP] - [GP PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP WOW] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP WOW%] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP YOY%] = DIVIDE ( [GP YOY], [GP PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP QOQ%] = DIVIDE ( [GP QOQ], [GP PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP MOM%] = DIVIDE ( [GP MOM], [GP PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs PW] = 
+SUMX (
+    VALUES ( 'Calendar'[WeekInEpoch] ),
+    CALCULATE (
+        [Costs],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[WeekInEpoch] ),
+            'Calendar'[WeekInEpoch]
+                = EARLIER ( 'Calendar'[WeekInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP POP] = [GP] - [GP PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission POP] = [Commission] - [Commission PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPM] = 
+    IF (
+        HASONEVALUE ( 'Publisher'[Publisher] ),
+        DIVIDE ( Transactions[Commission], Impressions[Impressions] ),
+        DIVIDE ( Transactions[Costs], Impressions[Impressions] )
+    )
+        * 1000
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+    DESCRIPTION = 'Effective Cost Per Mille (thousand)'
+;
+
+CREATE MEASURE 'Transactions'[eCPC] = 
+    IF (
+        HASONEVALUE ( 'Publisher'[Publisher] ),
+        DIVIDE ( Transactions[Commission], Clicks[Clicks] ),
+        DIVIDE ( Transactions[Costs], Clicks[Clicks] )
+    )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+    DESCRIPTION = 'Effective Cost Per Click'
+;
+
+CREATE MEASURE 'Transactions'[eCPS] = 
+    IF (
+        HASONEVALUE ( 'Publisher'[Publisher] ),
+        DIVIDE ( Transactions[Commission], Transactions[Sales] ),
+        DIVIDE ( Transactions[Costs], Transactions[Sales] )
+    )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+    DESCRIPTION = 'Effective Cost Per Sale'
+;
+
+CREATE MEASURE 'Transactions'[Order Value POP] = [Order Value] - [Order Value PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PPY] = 
+CALCULATE (
+    [Order Value],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PPQ] = 
+CALCULATE (
+    [Order Value],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[QuarterInYear] = MAX ( 'Calendar'[QuarterInYear] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PPM] = 
+CALCULATE (
+    [Order Value],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[MonthInYear] = MAX ( 'Calendar'[MonthInYear] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[Order Value SPLY] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Month] ), [Order Value PPM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Order Value PPQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Order Value PPY],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value POP%] = DIVIDE([Order Value POP],[Order Value PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PY] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+		// Full month selected.
+        CALCULATE (
+            [Order Value],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        ),
+		// Partial month selected.
+        CALCULATE (
+            [Order Value],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PQ] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected.
+        CALCULATE (
+            [Order Value],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Order Value],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PM] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected. 
+        CALCULATE (
+            [Order Value],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Order Value],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PW] = 
+SUMX (
+    VALUES ( 'Calendar'[WeekInEpoch] ),
+    CALCULATE (
+        [Order Value],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[WeekInEpoch] ),
+            'Calendar'[WeekInEpoch]
+                = EARLIER ( 'Calendar'[WeekInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [Order Value PD],
+    ISFILTERED ( 'Calendar'[Month] ), [Order Value PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Order Value PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Order Value PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [Order Value PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value YOY] = [Order Value] - [Order Value PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value QOQ] = [Order Value] - [Order Value PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value MOM] = [Order Value] - [Order Value PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value WOW] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value YOY%] = DIVIDE ( [Order Value YOY], [Order Value PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value QOQ%] = DIVIDE ( [Order Value QOQ], [Order Value PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value MOM%] = DIVIDE ( [Order Value MOM], [Order Value PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value WOW%] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs] = ([Commission] + [GP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+    DESCRIPTION = 'Cost Per Action'
+;
+
+CREATE MEASURE 'Transactions'[Costs PY] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+		// Full month selected.
+        CALCULATE (
+            [Costs],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        ),
+		// Partial month selected.
+        CALCULATE (
+            [Costs],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs PQ] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected.
+        CALCULATE (
+            [Costs],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Costs],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs PM] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected. 
+        CALCULATE (
+            [Costs],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Costs],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [Costs PD],
+    ISFILTERED ( 'Calendar'[Month] ), [Costs PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Costs PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Costs PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [Costs PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs WOW] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs WOW%] = 0
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs YOY] = [Costs] - [Costs PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs QOQ] = [Costs] - [Costs PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs MOM] = [Costs] - [Costs PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs YOY%] = DIVIDE ( [Costs YOY], [Costs PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs QOQ%] = DIVIDE ( [Costs QOQ], [Costs PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs MOM%] = DIVIDE ( [Costs MOM], [Costs PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value] = 
+IF (
+    HASONEVALUE ( Currencies[Currency Code] ),
+    SUMX (
+        CROSSJOIN ( Currencies, 'Calendar' ),
+        CALCULATE (
+            VALUES ( ExchangeRates[ExchangeRate] ) * SUM ( Transactions[SalesAmount] )
+        )
+    ),
+    SUM ( Transactions[SalesAmount] )
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales PD] = 
+SUMX (
+    VALUES ( 'Calendar'[DayInEpoch] ),
+    CALCULATE (
+        [Sales],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[DayInEpoch] ),
+            'Calendar'[DayInEpoch]
+                = EARLIER ( 'Calendar'[DayInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PD] = 
+SUMX (
+    VALUES ( 'Calendar'[DayInEpoch] ),
+    CALCULATE (
+        [Order Value],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[DayInEpoch] ),
+            'Calendar'[DayInEpoch]
+                = EARLIER ( 'Calendar'[DayInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[Commission PD] = 
+SUMX (
+    VALUES ( 'Calendar'[DayInEpoch] ),
+    CALCULATE (
+        [Commission],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[DayInEpoch] ),
+            'Calendar'[DayInEpoch]
+                = EARLIER ( 'Calendar'[DayInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[GP PD] = 
+SUMX (
+    VALUES ( 'Calendar'[DayInEpoch] ),
+    CALCULATE (
+        [GP],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[DayInEpoch] ),
+            'Calendar'[DayInEpoch]
+                = EARLIER ( 'Calendar'[DayInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[Costs PD] = 
+SUMX (
+    VALUES ( 'Calendar'[DayInEpoch] ),
+    CALCULATE (
+        [Costs],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[DayInEpoch] ),
+            'Calendar'[DayInEpoch]
+                = EARLIER ( 'Calendar'[DayInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[Costs POP] = [Costs] - [Costs PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs POP%] = DIVIDE([Costs POP],[Costs PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales PPD] =  0
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Transactions'[Order Value PPD] = 0
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Transactions'[AOV PY] = DIVIDE([Order Value PY], [Sales PY])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[AOV PQ] = DIVIDE([Order Value PQ], [Sales PQ])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[AOV PM] = DIVIDE([Order Value PM], [Sales PM])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[AOV PW] = DIVIDE([Order Value PW], [Sales PW])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[AOV YOY] = [AOV] - [AOV PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV QOQ] = [AOV] - [AOV PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV MOM] = [AOV] - [AOV PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV WOW] = [AOV] - [AOV PW]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV YOY%] = DIVIDE ( [AOV YOY], [AOV PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV QOQ%] = DIVIDE ( [AOV QOQ], [AOV PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV MOM%] = DIVIDE ( [AOV MOM], [AOV PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV WOW%] = DIVIDE ( [AOV WOW], [AOV PW] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [AOV PD],
+    ISFILTERED ( 'Calendar'[Month] ), [AOV PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [AOV PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [AOV PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [AOV PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV POP] = [AOV] - [AOV PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR PY] = DIVIDE([Clicks PY], [Impressions PY])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV POP%] = DIVIDE([AOV POP],[AOV PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR PQ] = DIVIDE([Clicks PQ], [Impressions PQ])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR PM] = DIVIDE([Clicks PM], [Impressions PM])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR PW] = DIVIDE([Clicks PW], [Impressions PW])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [CTR PD],
+    ISFILTERED ( 'Calendar'[Month] ), [CTR PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [CTR PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [CTR PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [CTR PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR PY] = DIVIDE([Sales PY], [Clicks PY])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Transactions'[CR PQ] = DIVIDE([Sales PQ], [Clicks PQ])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Transactions'[CR PM] = DIVIDE([Sales PM], [Clicks PM])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Transactions'[CR PW] = DIVIDE([Sales PW], [Clicks PW])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Transactions'[CR PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [CR PD],
+    ISFILTERED ( 'Calendar'[Month] ), [CR PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [CR PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [CR PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [CR PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS PY] = DIVIDE([Costs PY], [Order Value PY])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS PQ] = DIVIDE([Costs PQ], [Order Value PQ])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS PM] = DIVIDE([Costs PM], [Order Value PM])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS PW] = DIVIDE([Costs PW], [Order Value PW])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [COS PD],
+    ISFILTERED ( 'Calendar'[Month] ), [COS PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [COS PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [COS PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [COS PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS PY] = DIVIDE ( Transactions[Commission PY], Transactions[Sales PY] )
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[eCPS PQ] = DIVIDE ( Transactions[Commission PQ], Transactions[Sales PQ] )
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[eCPS PM] = DIVIDE ( Transactions[Commission PM], Transactions[Sales PM] )
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[eCPS PW] = DIVIDE ( Transactions[Commission PW], Transactions[Sales PW] )
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[eCPS PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [eCPS PD],
+    ISFILTERED ( 'Calendar'[Month] ), [eCPS PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [eCPS PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [eCPS PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [eCPS PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR YOY] = [CTR] - [CTR PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR QOQ] = [CTR] - [CTR PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR MOM] = [CTR] - [CTR PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR WOW] = [CTR] - [CTR PW]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR YOY%] = DIVIDE ( [CTR YOY], [CTR PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR QOQ%] = DIVIDE ( [CTR QOQ], [CTR PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR MOM%] = DIVIDE ( [CTR MOM], [CTR PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CTR WOW%] = DIVIDE ( [CTR WOW], [CTR PW] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR YOY] = [CR] - [CR PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR QOQ] = [CR] - [CR PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR MOM] = [CR] - [CR PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR WOW] = [CR] - [CR PW]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR YOY%] = DIVIDE ( [CR YOY], [CR PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR QOQ%] = DIVIDE ( [CR QOQ], [CR PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR MOM%] = DIVIDE ( [CR MOM], [CR PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR WOW%] = DIVIDE ( [CR WOW], [CR PW] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS YOY] = [COS] - [COS PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS QOQ] = [COS] - [COS PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS MOM] = [COS] - [COS PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS WOW] = [COS] - [COS PW]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS YOY%] = DIVIDE ( [CR YOY], [CR PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS QOQ%] = DIVIDE ( [CR QOQ], [CR PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS MOM%] = DIVIDE ( [CR MOM], [CR PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS WOW%] = DIVIDE ( [CR WOW], [CR PW] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS YOY] = [eCPS] - [eCPS PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS QOQ] = [eCPS] - [eCPS PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS MOM] = [eCPS] - [eCPS PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS WOW] = [eCPS] - [eCPS PW]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS YOY%] = DIVIDE ( [eCPS YOY], [eCPS PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS QOQ%] = DIVIDE ( [eCPS QOQ], [eCPS PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS MOM%] = DIVIDE ( [eCPS MOM], [eCPS PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS WOW%] = DIVIDE ( [eCPS WOW], [eCPS PW] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI PY] = [Order Value PY] - [Costs PY]
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI PQ] = [Order Value PQ] - [Costs PQ]
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI PM] = [Order Value PM] - [Costs PM]
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI PW] = [Order Value PW] - [Costs PW]
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [ROI PD],
+    ISFILTERED ( 'Calendar'[Month] ), [ROI PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [ROI PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [ROI PY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [ROI PW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI YOY] = [ROI] - [ROI PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI QOQ] = [ROI] - [ROI PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI MOM] = [ROI] - [ROI PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI WOW] = [ROI] - [ROI PW]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI YOY%] = DIVIDE ( [ROI YOY], [ROI PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI QOQ%] = DIVIDE ( [ROI QOQ], [ROI PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI MOM%] = DIVIDE ( [ROI MOM], [ROI PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI WOW%] = DIVIDE ( [ROI WOW], [ROI PW] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI POP] = [ROI] - [ROI PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI POP%] = DIVIDE([ROI POP],[ROI PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales DOD] = [Sales] - [Sales PD]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Sales DOD%] = DIVIDE ( [Sales DOD], [Sales PD] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Sales Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV PD] = DIVIDE([Order Value PD], [Sales PD])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[ROI PD] = [Order Value PD] - [Costs PD]
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[CR PD] = DIVIDE([Sales PD], [Clicks PD])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Transactions'[COS PD] = DIVIDE([Costs PD], [Order Value PD])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS PD] = DIVIDE ( Transactions[Commission PD], Transactions[Sales PD] )
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0.00'
+;
+
+CREATE MEASURE 'Transactions'[CTR PD] = DIVIDE([Clicks PD], [Impressions PD])
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Transactions'[Order Value DOD] = [Order Value] - [Order Value PD]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Order Value DOD%] = DIVIDE ( [Order Value DOD], [Order Value PD] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission DOD] = [Commission] - [Commission PD]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Commission DOD%] = DIVIDE ( [Commission DOD], [Commission PD] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Commission Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP DOD] = [GP] - [GP PD]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[GP DOD%] = DIVIDE ( [GP DOD], [GP PD] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Fee Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs DOD] = [Costs] - [Costs PD]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[Costs DOD%] = DIVIDE ( [Costs DOD], [Costs PD] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Costs Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV DOD] = [AOV] - [AOV PD]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[AOV DOD%] = DIVIDE ( [AOV DOD], [AOV PD] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI DOD] = [ROI] - [ROI PD]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[ROI DOD%] = DIVIDE ( [ROI DOD], [ROI PD] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Order Value Metrics'
+;
+
+CREATE MEASURE 'Transactions'[eCPS DOD] = [eCPS] - [eCPS PD]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS POP] = [COS] - [COS PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[COS POP%] = DIVIDE([COS POP],[COS PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Transactions'[CR DOD] = [CR] - [CR PD]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+    DISPLAYFOLDER = 'Uncategorised Metrics'
+;
+
+CREATE MEASURE 'Impressions'[Impressions] = SUM([ImpressionCount])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PY] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+		// Full month selected.
+        CALCULATE (
+            [Impressions],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        ),
+		// Partial month selected.
+        CALCULATE (
+            [Impressions],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 12
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PQ] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected.
+        CALCULATE (
+            [Impressions],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Impressions],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 3
+            )
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PM] = 
+SUMX (
+    VALUES ( 'Calendar'[YearMonthNumber] ),
+    IF (
+        CALCULATE ( COUNTROWS ( VALUES ( 'Calendar'[Date] ) ) )
+            = CALCULATE ( VALUES ( 'Calendar'[MonthDays] ) ),
+        // Full month selected. 
+        CALCULATE (
+            [Impressions],
+            ALL ( 'Calendar' ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        ),
+        // Partial month selected. 
+        CALCULATE (
+            [Impressions],
+            ALL ( 'Calendar' ),
+            CALCULATETABLE ( VALUES ( 'Calendar'[MonthDayNumber] ) ),
+            FILTER (
+                ALL ( 'Calendar'[YearMonthNumber] ),
+                'Calendar'[YearMonthNumber]
+                    = EARLIER ( 'Calendar'[YearMonthNumber] ) - 1
+            )
+        )
+    )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PW] = 
+SUMX (
+    VALUES ( 'Calendar'[WeekInEpoch] ),
+    CALCULATE (
+        [Impressions],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[WeekInEpoch] ),
+            'Calendar'[WeekInEpoch]
+                = EARLIER ( 'Calendar'[WeekInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PD] = 
+SUMX (
+    VALUES ( 'Calendar'[DayInEpoch] ),
+    CALCULATE (
+        [Impressions],
+        ALL ( 'Calendar' ),
+        FILTER (
+            ALL ( 'Calendar'[DayInEpoch] ),
+            'Calendar'[DayInEpoch]
+                = EARLIER ( 'Calendar'[DayInEpoch] ) - 1
+        )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PP] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Date] ), [Impressions PD],
+    ISFILTERED ( 'Calendar'[Month] ), [Impressions PM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Impressions PQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Impressions PY],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions POP] = [Impressions] - [Impressions PP]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions POP%] = DIVIDE([Impressions POP],[Impressions PP])
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0.00%;-#,0.00%;#,0.00%'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PPY] = 
+CALCULATE (
+    [Impressions],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+    )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PPQ] = 
+CALCULATE (
+    [Impressions],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[QuarterInYear] = MAX ( 'Calendar'[QuarterInYear] )
+    )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PPM] = 
+CALCULATE (
+    [Impressions],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[YearNumber]
+            = MAX ( 'Calendar'[YearNumber] ) - 1
+            && 'Calendar'[MonthInYear] = MAX ( 'Calendar'[MonthInYear] )
+    )
+)
+
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PPW] = 
+CALCULATE (
+    [Impressions],
+    FILTER (
+        ALL ( Calendar ),
+        'Calendar'[ISOYearNumber]
+            = MAX ( 'Calendar'[ISOYearNumber] ) - 1
+            && 'Calendar'[ISOWeekNumber] = MAX ( 'Calendar'[ISOWeekNumber] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions PPD] = 0
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions SPLY] = 
+SWITCH (
+    TRUE,
+    ISFILTERED ( 'Calendar'[Month] ), [Impressions PPM],
+    ISFILTERED ( 'Calendar'[Quarter] ), [Impressions PPQ],
+    ISFILTERED ( 'Calendar'[Year] ), [Impressions PPY],
+    ISFILTERED ( 'Calendar'[ISO Week] ), [Impressions PPW],
+    BLANK ()
+)
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions YOY] =  [Impressions] - [Impressions PY]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions QOQ] =  [Impressions] - [Impressions PQ]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions MOM] =  [Impressions] - [Impressions PM]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions WOW] =  [Impressions] - [Impressions PW]
+CALCULATION PROPERTY GENERAL
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions YOY%] =  DIVIDE ( [Impressions YOY], [Impressions PY] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Impressions'[Impressions QOQ%] =  DIVIDE ( [Impressions QOQ], [Impressions PQ] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Impressions'[Impressions MOM%] =  DIVIDE ( [Impressions MOM], [Impressions PM] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Impressions'[Impressions WOW%] =  DIVIDE ( [Impressions WOW], [Impressions PW] )
+CALCULATION PROPERTY GENERAL
+    FORMAT = '0.00%;-0.00%;0.00%'
+;
+
+CREATE MEASURE 'Impressions'[Impressions YTD] = 
+CALCULATE (
+    [Impressions],
+    FILTER (
+        ALL ( 'Calendar' ),
+        'Calendar'[YearNumber] = MAX ( 'Calendar'[YearNumber] )
+            && 'Calendar'[Date] <= MAX ( 'Calendar'[Date] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+CREATE MEASURE 'Impressions'[Impressions QTD] = 
+CALCULATE (
+    [Impressions],
+    FILTER (
+        ALL ( 'Calendar' ),
+        'Calendar'[YearQuarterNumber] = MAX ( 'Calendar'[YearQuarterNumber] )
+            && 'Calendar'[Date] <= MAX ( 'Calendar'[Date] )
+    )
+)
+CALCULATION PROPERTY GENERAL
+    VISIBLE = False
+    FORMAT = '#,0'
+;
+
+
